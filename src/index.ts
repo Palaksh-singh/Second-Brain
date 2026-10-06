@@ -3,9 +3,10 @@
 import express from "express";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import { UserModel } from "./db.js";
+import { ContentModel, UserModel } from "./db.js";
+import { JWT_PASSWORD } from "./config.js";
+import { userMiddleware } from "./middleware.js";
 
-const JWT_PASSWORD = "!123123";
 
 const app = express();
 app.use(express.json());
@@ -49,8 +50,27 @@ app.post("/api/v1/signin", async (req, res) => {
     }
 })
 
-app.post("/api/v1/content", (req, res) => {
+app.post("/api/v1/content", userMiddleware, async (req, res) => {
+    const link = req.body.link;
+    const type = req.body.type;
 
+    if (!req.userId) {
+        res.status(401).json({
+            message: "User is not authenticated"
+        });
+        return;
+    }
+
+    await ContentModel.create({
+        link,
+        type,
+        userId: new mongoose.Types.ObjectId(req.userId),
+        tags: []
+    });
+
+    return res.json({
+        message: "Content added"
+    });
 })
 
 app.get("/api/v2/content", (req, res) => {
