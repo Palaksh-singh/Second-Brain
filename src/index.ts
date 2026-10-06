@@ -73,13 +73,39 @@ app.post("/api/v1/content", userMiddleware, async (req, res) => {
     });
 })
 
-app.get("/api/v2/content", (req, res) => {
+app.get("/api/v2/content", userMiddleware, async (req, res) => {
+    const userId = req.userId;
+    if (!userId) {
+        res.status(401).json({ message: "User is not authenticated" });
+        return;
+    }
 
-})
+    const content = await ContentModel.find({
+        userId: new mongoose.Types.ObjectId(userId)
+    }).populate("userId", "username");
 
-app.delete("/api/v1/content", (req, res) => {
+    res.json({
+        content
+    });
+});
 
-})
+app.delete("/api/v1/content", userMiddleware, async (req, res) => {
+    const contentId = req.body.contentId;
+
+    if (!req.userId) {
+        res.status(401).json({ message: "User is not authenticated" });
+        return;
+    }
+
+    await ContentModel.deleteMany({
+        _id: new mongoose.Types.ObjectId(contentId),
+        userId: new mongoose.Types.ObjectId(req.userId)
+    });
+
+    res.json({ 
+        message: "Content deleted",
+    });
+});
 
 app.post("/api/v1/brain/share", (req, res) => {
 
